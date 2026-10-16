@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An interactive audio demonstration of Independent Component Analysis (ICA), comparing mixed signals with PCA and FastICA separation.">
+  <title>Unmix the Signal | ICA Audio Demo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172b2a;
+      --muted: #526865;
+      --paper: #f5f7f2;
+      --card: #fffefa;
+      --line: #dce5dc;
+      --green: #176b54;
+      --green-dark: #104b3d;
+      --mint: #e0f0e8;
+      --gold: #d49234;
+      --shadow: 0 18px 50px rgba(24, 58, 48, .08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    a { color: var(--green-dark); }
+    .wrap { width: min(1080px, calc(100% - 40px)); margin: 0 auto; }
+    header { padding: 22px 0; }
+    .nav { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .brand { font-weight: 800; letter-spacing: -.04em; font-size: 1.05rem; }
+    .brand span { color: var(--green); }
+    .nav a { text-decoration: none; font-weight: 650; font-size: .92rem; }
+    .hero { padding: 58px 0 48px; display: grid; grid-template-columns: 1.2fr .8fr; align-items: center; gap: 44px; }
+    .eyebrow { text-transform: uppercase; letter-spacing: .14em; color: var(--green); font-size: .76rem; font-weight: 800; }
+    h1 { max-width: 700px; margin: 12px 0 18px; font-size: clamp(2.6rem, 6vw, 5rem); line-height: .99; letter-spacing: -.065em; }
+    .hero p { max-width: 610px; color: var(--muted); font-size: 1.12rem; }
+    .hero-note { padding: 26px; border-radius: 24px; background: var(--mint); box-shadow: var(--shadow); }
+    .hero-note strong { display: block; font-size: 1.05rem; margin-bottom: 8px; }
+    .hero-note p { margin: 0; font-size: .96rem; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; margin-top: 8px; border: 1px solid rgba(23,107,84,.18); border-radius: 999px; font-size: .8rem; font-weight: 700; color: var(--green-dark); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+    section { padding: 28px 0; }
+    .section-head { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 18px; }
+    h2 { margin: 0; font-size: clamp(1.6rem, 3vw, 2.3rem); letter-spacing: -.045em; }
+    .section-head p { margin: 0; max-width: 510px; color: var(--muted); }
+    .panel { padding: 18px; background: var(--card); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); }
+    .plot { display: block; width: 100%; height: auto; border-radius: 12px; }
+    .caption { margin: 12px 4px 0; color: var(--muted); font-size: .9rem; }
+    .audio-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .audio-card { background: var(--card); border: 1px solid var(--line); padding: 18px; border-radius: 18px; min-width: 0; }
+    .audio-card h3 { margin: 0 0 2px; font-size: 1.05rem; }
+    .audio-card p { margin: 0 0 12px; color: var(--muted); font-size: .86rem; }
+    audio { width: 100%; height: 40px; }
+    .tag { display: inline-block; color: var(--green); font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; font-weight: 800; margin-bottom: 8px; }
+    .method-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .method { padding: 19px; background: var(--mint); border-radius: 18px; }
+    .method b { display: block; margin-bottom: 5px; }
+    .method p { margin: 0; font-size: .91rem; color: var(--muted); }
+    .note { border-left: 3px solid var(--gold); padding: 12px 16px; color: var(--muted); background: #fff8e9; border-radius: 0 12px 12px 0; font-size: .91rem; }
+    footer { margin-top: 36px; padding: 26px 0 40px; color: var(--muted); font-size: .88rem; border-top: 1px solid var(--line); }
+    footer .foot { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    @media (max-width: 760px) {
+      .hero { grid-template-columns: 1fr; padding-top: 36px; gap: 24px; }
+      .section-head { display: block; }
+      .section-head p { margin-top: 8px; }
+      .audio-grid, .method-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <div class="brand">UNMIX<span> / SIGNAL</span></div>
+      <a href="#listen">Listen to results ↓</a>
+    </div>
+  </header>
+  <main>
+    <div class="wrap">
+      <section class="hero" aria-labelledby="page-title">
+        <div>
+          <div class="eyebrow">A hands-on audio demonstration</div>
+          <h1 id="page-title">Three sounds.<br>Three mixtures.<br>Unmixed.</h1>
+          <p>Independent Component Analysis (ICA) estimates the original, statistically independent sounds from recordings where those sounds have been blended together.</p>
+          <span class="pill"><span class="dot" aria-hidden="true"></span> Python · NumPy · FastICA</span>
+        </div>
+        <aside class="hero-note">
+          <strong>What you are hearing</strong>
+          <p>The project mixes music, rain, and speech into three recordings, then compares PCA with FastICA to recover the sources. The output order and volume can differ from the originals.</p>
+        </aside>
+      </section>
+
+      <section aria-labelledby="results-title">
+        <div class="section-head">
+          <h2 id="results-title">The separation at a glance</h2>
+          <p>Each row tracks one source through its original waveform, a mixed recording, and the ICA estimate.</p>
+        </div>
+        <div class="panel">
+          <img class="plot" src="images/results.png" alt="Waveform comparison showing the original music, rain, and speech; three mixed recordings; and the corresponding ICA-separated signals." loading="lazy">
+          <p class="caption">Generated by <code>run_ica.py</code>. ICA can recover a source up to a change in order, loudness, and sign.</p>
+        </div>
+      </section>
+
+      <section id="listen" aria-labelledby="listen-title">
+        <div class="section-head">
+          <h2 id="listen-title">Listen to the audio</h2>
+          <p>Compare each mixture with the FastICA and PCA output. Use headphones to hear the differences more clearly.</p>
+        </div>
+        <h3>Mixed recordings</h3>
+        <div class="audio-grid">
+          <article class="audio-card"><span class="tag">Input · 01</span><h3>Mixture 1</h3><p>One combined microphone signal.</p><audio controls preload="none"><source src="audio/mixed_1.wav" type="audio/wav">Your browser does not support audio playback. <a href="audio/mixed_1.wav">Download the WAV</a>.</audio></article>
+          <article class="audio-card"><span class="tag">Input · 02</span><h3>Mixture 2</h3><p>A different blend of the same sources.</p><audio controls preload="none"><source src="audio/mixed_2.wav" type="audio/wav">Your browser does not support audio playback. <a href="audio/mixed_2.wav">Download the WAV</a>.</audio></article>
+          <article class="audio-card"><span class="tag">Input · 03</span><h3>Mixture 3</h3><p>A third independent blend.</p><audio controls preload="none"><source src="audio/mixed_3.wav" type="audio/wav">Your browser does not support audio playback. <a href="audio/mixed_3.wav">Download the WAV</a>.</audio></article>
+        </div>
+        <h3 style="margin-top:28px">FastICA estimates</h3>
+        <div class="audio-grid">
+          <article class="audio-card"><span class="tag">FastICA · Output</span><h3>Music</h3><p>Estimated independent source.</p><audio controls preload="none"><source src="audio/separated_Music.wav" type="audio/wav">Your browser does not support audio playback. <a href="audio/separated_Music.wav">Download the WAV</a>.</audio></article>
+          <article class="audio-card"><span class="tag">FastICA · Output</span><h3>Rain</h3><p>Estimated independent source.</p><audio controls preload="none"><source src="audio/separated_Rain.wav" type="audio/wav">Your browser does not support audio playback. <a href="audio/separated_Rain.wav">Download the WAV</a>.</audio></article>
+          <article class="audio-card"><span class="tag">FastICA · Output</span><h3>Speech</h3><p>Estimated independent source.</p><audio controls preload="none"><source src="audio/separated_Speech.wav" type="audio/wav">Your browser does not support audio playback. <a href="audio/separated_Speech.wav">Download the WAV</a>.</audio></article>
+        </div>
+        <h3 style="margin-top:28px">PCA baseline</h3>
+        <div class="audio-grid">
+          <article class="audio-card"><span class="tag">PCA · Baseline</span><h3>Music</h3><p>Whitened component matched to music.</p><audio controls preload="none"><source src="audio/pca_Music.wav" type="audio/wav">Your browser does not support audio playback. <a href="audio/pca_Music.wav">Download the WAV</a>.</audio></article>
+          <article class="audio-card"><span class="tag">PCA · Baseline</span><h3>Rain</h3><p>Whitened component matched to rain.</p><audio controls preload="none"><source src="audio/pca_Rain.wav" type="audio/wav">Your browser does not support audio playback. <a href="audio/pca_Rain.wav">Download the WAV</a>.</audio></article>
+          <article class="audio-card"><span class="tag">PCA · Baseline</span><h3>Speech</h3><p>Whitened component matched to speech.</p><audio controls preload="none"><source src="audio/pca_Speech.wav" type="audio/wav">Your browser does not support audio playback. <a href="audio/pca_Speech.wav">Download the WAV</a>.</audio></article>
+        </div>
+      </section>
+
+      <section aria-labelledby="steps-title">
+        <div class="section-head">
+          <h2 id="steps-title">How the method works</h2>
+          <p>The implementation builds the solution in three understandable stages.</p>
+        </div>
+        <div class="method-grid">
+          <article class="method"><b>1. Mix</b><p>A mixing matrix combines the source waveforms into multiple observed signals.</p></article>
+          <article class="method"><b>2. Whiten</b><p>Centering and PCA whitening remove the mean and make components uncorrelated with equal variance.</p></article>
+          <article class="method"><b>3. Separate</b><p>FastICA searches for directions with non-Gaussian outputs, estimating the independent sources.</p></article>
+        </div>
+      </section>
+      <p class="note">ICA has inherent ambiguities: it cannot determine the original source order, absolute loudness, or sign. Separation quality also depends on the sources being sufficiently independent and the number of mixtures matching the number of sources.</p>
+    </div>
+  </main>
+  <footer>
+    <div class="wrap foot"><span>Unmix the Signal · Independent Component Analysis in Python</span><span>See the <a href="README.md">project README</a> for code and run instructions.</span></div>
+  </footer>
+</body>
+</html>
