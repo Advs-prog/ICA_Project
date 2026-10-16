@@ -1,0 +1,50 @@
+{
+  "clip_seconds": 8,
+  "sample_rate": 11025,
+  "sources": [
+    {
+      "name": "sub_clair-action-rock-614584",
+      "start_seconds": 73.1,
+      "file": "song_demo_output/selected_songs/song_1_sub_clair-action-rock-614584.wav"
+    },
+    {
+      "name": "alexgrohl-energetic-action-sport-500409",
+      "start_seconds": 5.8,
+      "file": "song_demo_output/selected_songs/song_2_alexgrohl-energetic-action-sport-500409.wav"
+    }
+  ],
+  "mixing_matrix": [
+    [
+      1.856,
+      0.179
+    ],
+    [
+      0.081,
+      1.566
+    ]
+  ],
+  "mixtures": [
+    {
+      "name": "Mixed recording 1",
+      "file": "song_demo_output/mixed_songs/mixture_1.wav"
+    },
+    {
+      "name": "Mixed recording 2",
+      "file": "song_demo_output/mixed_songs/mixture_2.wav"
+    }
+  ],
+  "separated": [
+    {
+      "name": "Separated output 2",
+      "matched_song": "sub_clair-action-rock-614584",
+      "correlation": 0.999,
+      "file": "song_demo_output/separated_songs/separated_1_sub_clair-action-rock-614584.wav"
+    },
+    {
+      "name": "Separated output 1",
+      "matched_song": "alexgrohl-energetic-action-sport-500409",
+      "correlation": 1.0,
+      "file": "song_demo_output/separated_songs/separated_2_alexgrohl-energetic-action-sport-500409.wav"
+    }
+  ]
+}

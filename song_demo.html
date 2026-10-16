@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A visual demo of randomly mixing songs, whitening the mixtures, separating them with ICA, and matching the results.">
+  <title>Random Mix → ICA → Match</title>
+  <style>
+    :root { color-scheme: light; --ink:#172b2a; --muted:#526865; --paper:#f5f7f2; --card:#fffefa; --line:#dce5dc; --green:#176b54; --mint:#e0f0e8; --gold:#d49234; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+    .wrap { width:min(1040px,calc(100% - 36px)); margin:auto; }
+    header { padding:22px 0; border-bottom:1px solid var(--line); }
+    header a { color:var(--green); font-weight:750; text-decoration:none; }
+    .hero { padding:48px 0 28px; }
+    .eyebrow { color:var(--green); font-size:.76rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+    h1 { margin:10px 0; font-size:clamp(2.2rem,6vw,4.3rem); line-height:1; letter-spacing:-.06em; }
+    .intro { max-width:700px; color:var(--muted); font-size:1.08rem; }
+    .notice { margin:20px 0; padding:16px 18px; border:1px solid var(--line); border-radius:14px; background:var(--card); color:var(--muted); }
+    .notice strong { color:var(--ink); }
+    .steps { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:26px 0; }
+    .step { padding:14px; border-radius:14px; background:var(--mint); font-weight:750; }
+    .step span { display:block; color:var(--green); font-size:.72rem; text-transform:uppercase; letter-spacing:.1em; }
+    section { padding:20px 0; }
+    h2 { margin:0 0 14px; font-size:1.65rem; letter-spacing:-.04em; }
+    h3 { margin:0; font-size:1.03rem; }
+    .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+    .card { min-width:0; padding:17px; border:1px solid var(--line); border-radius:17px; background:var(--card); }
+    .card p { min-height:1.5em; margin:5px 0 12px; color:var(--muted); font-size:.9rem; }
+    audio { display:block; width:100%; height:40px; }
+    .tag { display:block; margin-bottom:7px; color:var(--green); font-size:.7rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+    .matrix-wrap { overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:var(--card); }
+    table { border-collapse:collapse; min-width:360px; width:100%; text-align:center; }
+    th,td { padding:10px 14px; border-bottom:1px solid var(--line); }
+    th { color:var(--muted); font-size:.82rem; }
+    tr:last-child td { border-bottom:0; }
+    .match { display:inline-block; margin:10px 0 12px; padding:5px 9px; border-radius:999px; background:var(--mint); color:var(--green); font-size:.82rem; font-weight:750; }
+    .empty { padding:22px; border:1px dashed #9bb5a8; border-radius:16px; background:#fffefa; color:var(--muted); }
+    code { color:var(--green); }
+    footer { margin-top:32px; padding:24px 0 36px; border-top:1px solid var(--line); color:var(--muted); font-size:.88rem; }
+    @media(max-width:760px) { .steps { grid-template-columns:repeat(2,1fr); } .grid { grid-template-columns:1fr; } .card p { min-height:0; } }
+  </style>
+</head>
+<body>
+  <header><div class="wrap"><a href="index.html">← ICA Project</a></div></header>
+  <main class="wrap">
+    <div class="hero">
+      <div class="eyebrow">Latest generated run</div>
+      <h1>Pick. Mix. Separate. Match.</h1>
+      <p class="intro">The Python demo randomly selects two songs from the local library, creates mixed recordings, whitens them, separates them with FastICA, and matches each recovered signal back to a song.</p>
+      <div class="steps" aria-label="Demo stages">
+        <div class="step"><span>Stage 1</span>Random song clips</div>
+        <div class="step"><span>Stage 2</span>Mixed signals</div>
+        <div class="step"><span>Stage 3</span>Whitening + ICA</div>
+        <div class="step"><span>Stage 4</span>Song matching</div>
+      </div>
+    </div>
+    <div id="status" class="notice" role="status">Loading the latest demo results…</div>
+    <div id="demo" hidden>
+      <section aria-labelledby="picked-title"><h2 id="picked-title">1. Songs randomly picked</h2><div id="sources" class="grid"></div></section>
+      <section aria-labelledby="mix-title"><h2 id="mix-title">2. Random mixing</h2><p class="intro">Each row of the matrix creates one recording by combining the selected song clips.</p><div id="matrix" class="matrix-wrap"></div><div id="mixtures" class="grid" style="margin-top:12px"></div></section>
+      <section aria-labelledby="separated-title"><h2 id="separated-title">3–4. Separated and matched</h2><p class="intro">Whitening and FastICA run in Python. Correlation matches each separated output to one selected library song.</p><div id="separated" class="grid"></div></section>
+    </div>
+  </main>
+  <footer><div class="wrap">Run <code>python run_song_demo.py</code> to generate a new random set, then refresh this page.</div></footer>
+  <script>
+    const statusBox = document.getElementById("status");
+    const demo = document.getElementById("demo");
+
+    function makeAudioCard(label, title, detail, file) {
+      const card = document.createElement("article");
+      card.className = "card";
+      const tag = document.createElement("span");
+      tag.className = "tag";
+      tag.textContent = label;
+      const heading = document.createElement("h3");
+      heading.textContent = title;
+      const note = document.createElement("p");
+      note.textContent = detail;
+      const player = document.createElement("audio");
+      player.controls = true;
+      player.preload = "none";
+      const source = document.createElement("source");
+      source.src = file;
+      source.type = "audio/wav";
+      player.appendChild(source);
+      card.append(tag, heading, note, player);
+      return card;
+    }
+
+    function showMatrix(matrix) {
+      const table = document.createElement("table");
+      const header = document.createElement("tr");
+      const blank = document.createElement("th");
+      blank.textContent = "Mixture";
+      header.appendChild(blank);
+      matrix.forEach((_, i) => {
+        const cell = document.createElement("th");
+        cell.textContent = `Song ${i + 1}`;
+        header.appendChild(cell);
+      });
+      const thead = document.createElement("thead");
+      thead.appendChild(header);
+      const tbody = document.createElement("tbody");
+      matrix.forEach((row, i) => {
+        const tr = document.createElement("tr");
+        const label = document.createElement("td");
+        label.textContent = `Mix ${i + 1}`;
+        tr.appendChild(label);
+        row.forEach(value => {
+          const cell = document.createElement("td");
+          cell.textContent = Number(value).toFixed(2);
+          tr.appendChild(cell);
+        });
+        tbody.appendChild(tr);
+      });
+      table.append(thead, tbody);
+      document.getElementById("matrix").replaceChildren(table);
+    }
+
+    fetch("song_demo_output/results.json")
+      .then(response => {
+        if (!response.ok) throw new Error("No saved run yet");
+        return response.json();
+      })
+      .then(data => {
+        statusBox.textContent = `Showing a run with ${data.sources.length} songs and ${data.clip_seconds}-second excerpts.`;
+        demo.hidden = false;
+        const sources = document.getElementById("sources");
+        data.sources.forEach((song, i) => {
+          sources.appendChild(makeAudioCard("Random pick", song.name,
+            `Excerpt starts around ${song.start_seconds}s into this song.`, song.file));
+        });
+        showMatrix(data.mixing_matrix);
+        const mixtures = document.getElementById("mixtures");
+        data.mixtures.forEach((item, i) => {
+          mixtures.appendChild(makeAudioCard("After mixing", item.name,
+            "A blend of all selected songs.", item.file));
+        });
+        const separated = document.getElementById("separated");
+        data.separated.forEach(item => {
+          const card = makeAudioCard("FastICA output", item.name,
+            "Recovered audio from the mixed recordings.", item.file);
+          const match = document.createElement("span");
+          match.className = "match";
+          match.textContent = `Matched: ${item.matched_song} · correlation ${item.correlation.toFixed(3)}`;
+          card.insertBefore(match, card.lastChild);
+          separated.appendChild(card);
+        });
+      })
+      .catch(() => {
+        statusBox.innerHTML = "No generated run is available yet. Add at least two audio files to <code>library/</code>, run <code>python run_song_demo.py</code>, then reload this page. For local viewing, serve the project folder with <code>python -m http.server 8000</code> and open <code>http://localhost:8000/song_demo.html</code>.";
+      });
+  </script>
+</body>
+</html>
+

@@ -38,3 +38,12 @@ which is the permutation ambiguity of ICA.
 
 **Live demo:** [ICA Project on Render](https://ica-project.onrender.com)
 
+## Step 5: Mini song matcher
+
+The matcher compares a short audio clip with songs in `library/` and finds the closest match. You can also use an ICA-separated WAV file as the clip.
+
+## Step 6: Random mixing and matching
+
+Two songs are randomly selected from `library/` and mixed. The mixtures are whitened and separated with FastICA, then each output is matched to its source song.
+
+**Song mixing demo:** [View the random mixing and ICA matching demo](https://ica-project.onrender.com/song_demo.html)
