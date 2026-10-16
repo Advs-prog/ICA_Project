@@ -32,22 +32,9 @@ which is the permutation ambiguity of ICA.
 
 ![FastICA on the toy example](images/toy_ica.png)
 
+## Step 4: Audio ICA demo
 
-## Final step (complete after deployment)
+`audio_utils.py` loads and saves audio files. `ica.py` provides the centering, whitening, FastICA, and source-matching functions. `run_ica.py` loads audio from `sources/`, mixes and separates the signals, then saves the audio results in `audio/` and the comparison plot in `images/results.png`.
 
-### Publish a hosted demo
-
-The repository now includes a static browser demo in `index.html`. It displays `images/results.png` and lets visitors play the generated WAV files in `audio/`. The Python script remains a separate command-line demo.
-
-After pushing the repository to GitHub, create a **Static Site** on Render connected to that repository. The page is at the repository root, so use:
-
-- **Build command:** leave blank
-- **Publish directory:** `.`
-
-Deploy the site, open its public URL, and verify the plot and audio links work. Then replace the placeholder below with the Render URL:
-
-**Hosted demo:** `ADD_RENDER_URL_HERE`
-
-The hosted page displays the saved results; it does not run ICA in the browser. Keep private or unlicensed source audio out of the public repository, and do not commit the local `venv/` folder.
-
+**Live demo:** [ICA Project on Render](https://ica-project.onrender.com)
 
